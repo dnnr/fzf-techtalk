@@ -32,6 +32,10 @@ src=
 
 mtime() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1"; }
 
+# Output depends on the theme and on this script too, so both belong in every
+# key: editing theme.json must invalidate the cache, not serve yesterday's slide.
+style=$(cat theme.json "$0" | sha1sum | cut -c1-16)
+
 typeset_slide() {
   case $kind in
     title)
@@ -67,10 +71,10 @@ typeset_slide() {
 # Content-addressed, so editing slides.md invalidates exactly the slides whose
 # text changed. A link slide is keyed on the file it points at instead.
 if [[ $kind == link ]]; then
-  key=$(printf 'link|%s|%s|%s|%s' "$src" "$(mtime "$src")" "$cols" "$lines" |
+  key=$(printf 'link|%s|%s|%s|%s|%s' "$src" "$(mtime "$src")" "$cols" "$lines" "$style" |
           sha1sum | cut -c1-16)
 else
-  key=$(printf '%s|%s|%s|%s' "$kind" "$cols" "$lines" "$body" |
+  key=$(printf '%s|%s|%s|%s|%s' "$kind" "$cols" "$lines" "$style" "$body" |
           sha1sum | cut -c1-16)
 fi
 out=$cache/$key
@@ -87,7 +91,7 @@ if [[ ! -f $out ]]; then
   fi
   # First miss at this geometry warms every other slide in the background,
   # so cold-cache latency never lands mid-talk. Guarded to run once.
-  warm=$cache/.warm-${cols}x${lines}
+  warm=$cache/.warm-$style-${cols}x${lines}
   if [[ ! -e $warm ]]; then
     touch "$warm"
     count=$(slides count)
