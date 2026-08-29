@@ -38,7 +38,7 @@ awk -f slides.awk -v mode=index -v D="$D" slides.md | head -n1 | fzf \
   --bind 'ctrl-q:abort' \
   --bind 'space:reload-sync%awk -f slides.awk -v mode=index -v D="|" slides.md | head -n$(({n} + 2))%+wait+down' \
   --bind 'J:reload-sync%awk -f slides.awk -v mode=index -v D="|" slides.md | head -n$(({n} + 2))%+wait+down' \
-  --bind 'K:reload-sync%awk -f slides.awk -v mode=index -v D="|" slides.md | head -n$(({n} + 0))%+wait+up' \
+  --bind 'K:reload-sync%awk -f slides.awk -v mode=index -v D="|" slides.md | head -n$(( {n} > 0 ? {n} : 1 ))%+wait+up' \
   --bind 'esc:ignore' \
   --bind "load:bg-transform-footer:$CLOCK" \
   --bind "every(1):bg-transform-footer:$CLOCK" \
