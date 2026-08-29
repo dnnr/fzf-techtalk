@@ -99,7 +99,8 @@ EOF
   ;;
 
   listen)   
-    prompt "cat names.txt | FZF_API_KEY=blafoo fzf --listen=0.0.0.0:1234"
+    set -x FZF_API_KEY notreallysecretbutgoodenough
+    prompt "cat names.txt | fzf --listen=0.0.0.0:1234"
   ;;
 
   listen2)
