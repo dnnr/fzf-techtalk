@@ -21,6 +21,8 @@ if [ -z "${TMUX:-}" ]; then
   echo >&2 "Needs to run inside tmux!"
   exit 1
 fi
+# Session-level overrides: 'set -u' drops them again and restores the globals.
+trap 'tmux set -u status; tmux set -u mouse' EXIT
 tmux set status off
 tmux set mouse off
 
