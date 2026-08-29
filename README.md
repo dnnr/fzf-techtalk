@@ -9,8 +9,10 @@ demo in a tmux popup.
 ## Running it
 
 Requires **tmux** (the deck refuses to start outside it), plus `fzf`, `gum`,
-`glow`, `bat`/`batcat`, `fish`, `awk`, and `sha1sum`. Some individual demos also
-want `jq`, `curl`, or `kubectl`.
+`glow`, `fish`, `awk`, `sha1sum`, `realpath`, and `stat`. `bat`/`batcat` is
+optional but recommended. Some individual demos also want `jq`, `curl`, or `kubectl`.
+
+Developed and tested against **fzf 0.74.3**.
 
 ```sh
 ./start
