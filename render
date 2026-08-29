@@ -51,18 +51,13 @@ typeset_slide() {
     # md)  printf '%s\n' "$body" | glow -s theme.json -w "$cols" - ;;
     # Real source files, shown as themselves: the tool, and this deck.
     link)
-      case $src in
-        *.fish|*.sh|*.py)
-          if command -v batcat >/dev/null 2>&1; then
-            batcat --color=always --style=numbers --terminal-width "$cols" "$src"
-          elif command -v bat >/dev/null 2>&1; then
-            bat --color=always --style=numbers --terminal-width "$cols" "$src"
-          else
-            cat "$src"
-          fi
-          ;;
-        *)  cat "$src" ;;
-      esac
+      if command -v batcat >/dev/null 2>&1; then
+        batcat --color=always --style=numbers --terminal-width "$cols" "$src"
+      elif command -v bat >/dev/null 2>&1; then
+        bat --color=always --style=numbers --terminal-width "$cols" "$src"
+      else
+        cat "$src"
+      fi
       ;;
     *)   printf '%s\n' "$body" ;;
   esac
