@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+cd "$(dirname "$0")"
+
+D='|' # must not appear in any slide title
+
+mkdir -p .cache
+STAMP=.cache/deck.start
+[[ -f $STAMP ]] || date +%s > "$STAMP"
+export STAMP
+
+export KEYS='j/k move  J/K reveal  ↵ demo  ^s shell  ^q quit'
+export CLOCK='
+  now=$(( $(date +%s) - $(cat "$STAMP") ))
+  printf "%02d:%02d elapsed   %s" \
+    $((now/60)) $((now%60)) "$KEYS"
+'
+
+if [ -z "${TMUX:-}" ]; then
+  echo >&2 "Needs to run inside tmux!"
+  exit 1
+fi
+tmux set status off
+tmux set mouse off
+
+awk -f slides.awk -v mode=index -v D="$D" slides.md | head -n1 | fzf \
+  --with-shell "/usr/bin/env bash -c" \
+  --delimiter "$D" --with-nth '{2}' --accept-nth '{1}' \
+  --sync \
+  --no-sort --no-input --no-info --no-scrollbar \
+  --layout reverse --style full --highlight-line \
+  --list-label ' contents ' --preview-label ' ' \
+  --preview './render {1}' \
+  --preview-window 'right,75%,border-left,wrap' \
+  --bind 'j:down,k:up' \
+  --bind 'resize:refresh-preview' \
+  --bind 'ctrl-q:abort' \
+  --bind 'space:reload-sync%awk -f slides.awk -v mode=index -v D="|" slides.md | head -n$(({n} + 2))%+wait+down' \
+  --bind 'J:reload-sync%awk -f slides.awk -v mode=index -v D="|" slides.md | head -n$(({n} + 2))%+wait+down' \
+  --bind 'K:reload-sync%awk -f slides.awk -v mode=index -v D="|" slides.md | head -n$(({n} + 0))%+wait+up' \
+  --bind 'esc:ignore' \
+  --bind "load:bg-transform-footer:$CLOCK" \
+  --bind "every(1):bg-transform-footer:$CLOCK" \
+  --bind 'enter:transform:
+            [[ -z {3} ]] && { echo "change-footer:  (no demo on this slide)"; exit; }
+            echo "execute-silent(tmux display-popup -E -w 85% -h 80% ./demo {3})"' \
+  --bind 'ctrl-s:execute-silent(tmux display-popup -E -w 85% -h 80% ./demo)' \
+  >/dev/null

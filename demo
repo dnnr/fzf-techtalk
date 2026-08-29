@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+
+set -uo pipefail                 # deliberately not -e: fzf exits 130 on ESC
+cd "$(dirname "$0")" || exit 1
+
+# Your own config must not leak into a demo about defaults.
+unset FZF_DEFAULT_OPTS FZF_DEFAULT_OPTS_FILE
+export HISTDB_PATH=${HISTDB_PATH:-./demo.sqlite}   # seeded db, never your real one
+
+dim=$'\033[2m'; bold=$'\033[1m'; off=$'\033[0m'
+
+say()  { printf '%s%s%s\n' "$dim" "$1" "$off"; }
+run()  {                        # show the command, wait, then run it
+  printf '\n%s$ %s%s' "$bold" "$1" "$off"
+  read -rsn1                    # your beat to talk over it
+  printf '\n'
+  eval "$1" || true
+}
+prompt() {
+  export PROMPT="${1:-}"
+  # fish -C 'set fish_autosuggestion_enabled 0; function fish_vcs_prompt; end; function fish_chezmoi_prompt; end; commandline -- $PROMPT';
+  fish -C 'set fish_autosuggestion_enabled 0; function fish_vcs_prompt; end; function fish_chezmoi_prompt; end; commandline -- (cat '<(echo "$PROMPT")')'
+}
+done_() { printf '\n%s-- back to the deck --%s' "$dim" "$off"; read -rsn1; }
+
+case ${1:-} in
+
+  basics)
+    say "Pick a name: cat names.txt | fzf"
+    say ""
+    prompt ""
+    ;;
+
+  mangling)
+    say "cat secrets.txt | fzf --with-nth=2.."
+    say "cat names.txt | fzf --with-nth='{n}: {1}' --tac"
+    say ""
+    prompt ""
+    ;;
+
+  preview)
+    say "Other stuff to show: --prefix=30%, --prefix=bottom, etc."
+    say ""
+    prompt "find | fzf --preview='stat {}'"
+    ;;
+
+  preview-header)
+    prompt 'kubectl config get-contexts -o name | fzf --preview="kubectl --context {} get pods -A" --preview-window=~1,70%'
+    # More involved example using fishql:
+    # prompt 'echo -e ".separator '\'' '\''\nSELECT datetime(s.start_time, '\''unixepoch'\'', '\''localtime'\''), s.id, COUNT(*) AS line FROM sessions s JOIN commands c ON c.session_id = s.id GROUP BY s.id ORDER BY s.start_time" | fishql-query |fzf --preview "set fishql_dbfile ~/.local/share/fish/fishql.db; echo -e '\''.mode box\n select id,tty,euid,command from commands where session_id = {3}'\'' | fishql-query " --preview-window=~3'
+    ;;
+
+  preview-responsive)
+    prompt 'seq 20 | fzf --tac --footer blafoo --header foobar --preview "yes Hello World | head -n {}" --preview-window "right,50%,<50(bottom,50%)"'
+    ;;
+
+  preview-anim)
+    say "(parrot is a good example for in a small window :)"
+    prompt "$(cat << 'EOF'
+curl -s ascii.live/list | jq -r '.frames[]' \
+  | fzf --preview 'curl -sN ascii.live/{}' \
+  --preview-window 'right,70%,follow'
+EOF
+)"
+  ;;
+
+  expect)
+    cp names.txt .cache/names.txt
+    prompt "$(cat << 'EOF'
+function edit_names
+    set fzf_out (cat .cache/names.txt | fzf --tac --expect enter,ctrl-d,ctrl-n --print-query)
+    [ (count $fzf_out) -le 1 ] && return 0  # ESC, do nothing
+    switch $fzf_out[2]  # [2] is enter, ctrl-d or ctrl-n
+        case "ctrl-d"
+            sed -i "/^$fzf_out[3]\$/d" .cache/names.txt  # [3] is the selected line
+            edit_names
+        case "ctrl-n"
+            echo "$fzf_out[1]" >> .cache/names.txt  # [1] is the entered query
+            edit_names
+        case "enter"
+            echo $fzf_out[3]
+    end
+end
+EOF
+)"
+  ;;
+
+  reload)
+    prompt "seq 10 | fzf --bind='ctrl-r:reload-sync(date; sleep 3; seq 10)'"
+  ;;
+
+  line-identity)
+    prompt "$(cat << 'EOF'
+kubectl get pods -A | \
+fzf --multi --track --id-nth 2 --accept-nth 2 --header-lines=1 \
+--bind 'ctrl-r:reload-sync:kubectl get pods -A'
+EOF
+)"
+  ;;
+
+  listen)   
+    prompt "cat names.txt | FZF_API_KEY=blafoo fzf --listen=0.0.0.0:1234"
+  ;;
+
+  listen2)
+    say "fzf with a control channel. Nobody is touching the keyboard."
+    ( sleep 3
+      for a in down down 'change-header:hello from another process' down; do
+        curl -s -XPOST localhost:6266 -d "$a" >/dev/null; sleep 1.2
+      done ) &
+    run "seq 20 | fzf --listen 6266 --reverse --header 'watch this'"
+    wait 2>/dev/null
+    ;;
+
+  *)
+    prompt ""
+    ;;
+esac
+
+done_

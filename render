@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# render N -> slide N of slides.md, styled to the preview window, cached.
+#
+# Dispatch is by the slide's `kind`, so bodies carry no boilerplate:
+#   title   centered via gum      (title / section slides)
+#   md      full-bleed via glow   (body slides)
+#   link    the body is a path; that file is rendered as itself
+#   txt     raw ANSI, printed as-is (escape hatch: figlet, hand-drawn boxes)
+#
+# slides.awk owns the parsing; this script only knows how to typeset.
+
+set -euo pipefail
+cd "$(dirname "$0")"
+
+SLIDES=slides.md
+idx=$1
+cols=${FZF_PREVIEW_COLUMNS:-80}     # not $COLUMNS: the shell resets that
+lines=${FZF_PREVIEW_LINES:-24}
+export CLICOLOR_FORCE=1             # preview stdout is a pipe, not a tty
+cache=.cache; mkdir -p "$cache"
+
+slides() { awk -f slides.awk -v mode="$1" -v n="${2:-0}" "$SLIDES"; }
+
+# One parse, not two: mode=slide is the meta line followed by the body.
+kind= target= body=
+{ IFS=$'\t' read -r kind target; body=$(cat); } < <(slides slide "$idx") || true
+[[ -n $kind ]] || { printf 'no slide %s in %s\n' "$idx" "$SLIDES" >&2; exit 1; }
+
+# A link slide's body is a path, relative to this directory.
+src=
+[[ $kind == link ]] && src=$(realpath "$target")
+
+mtime() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1"; }
+
+typeset_slide() {
+  case $kind in
+    title)
+      w=$(( cols / 2 ))
+      left=$(( (cols - w) / 2 ))
+
+      printf '%s\n' "$body" | gum style \
+        --border double --border-foreground 212 \
+        --align center --width "$w" \
+        --padding "1 2" --margin "1 0 1 $left"
+      ;;
+    md)  printf '%s\n' "$body" | glow -s theme.json -w "$cols" - ;;
+    # md)  printf '%s\n' "$body" | glow -s theme.json -w "$cols" - ;;
+    # Real source files, shown as themselves: the tool, and this deck.
+    link)
+      case $src in
+        *.fish|*.sh|*.py)
+          if command -v batcat >/dev/null 2>&1; then
+            batcat --color=always --style=numbers --terminal-width "$cols" "$src"
+          elif command -v bat >/dev/null 2>&1; then
+            bat --color=always --style=numbers --terminal-width "$cols" "$src"
+          else
+            cat "$src"
+          fi
+          ;;
+        *)  cat "$src" ;;
+      esac
+      ;;
+    *)   printf '%s\n' "$body" ;;
+  esac
+}
+
+# Content-addressed, so editing slides.md invalidates exactly the slides whose
+# text changed. A link slide is keyed on the file it points at instead.
+if [[ $kind == link ]]; then
+  key=$(printf 'link|%s|%s|%s|%s' "$src" "$(mtime "$src")" "$cols" "$lines" |
+          sha1sum | cut -c1-16)
+else
+  key=$(printf '%s|%s|%s|%s' "$kind" "$cols" "$lines" "$body" |
+          sha1sum | cut -c1-16)
+fi
+out=$cache/$key
+
+if [[ ! -f $out ]]; then
+  # Atomic: a half-written cache file must never reach the screen. The temp name
+  # carries $$ so a foreground render and the background warm-up can race on the
+  # same slide without one mv'ing the other's file out from under it.
+  tmp=$out.$$.tmp
+  if ! { typeset_slide > "$tmp" && mv "$tmp" "$out"; }; then
+    rm -f "$tmp"
+    [[ $kind == link ]] && exec cat "$src"
+    printf '%s\n' "$body"; exit 0
+  fi
+  # First miss at this geometry warms every other slide in the background,
+  # so cold-cache latency never lands mid-talk. Guarded to run once.
+  warm=$cache/.warm-${cols}x${lines}
+  if [[ ! -e $warm ]]; then
+    touch "$warm"
+    count=$(slides count)
+    for ((i = 1; i <= count; i++)); do
+      (( i == idx )) && continue
+      FZF_PREVIEW_COLUMNS=$cols FZF_PREVIEW_LINES=$lines "$0" "$i" >/dev/null 2>&1 &
+    done
+  fi
+fi
+
+exec cat "$out"
