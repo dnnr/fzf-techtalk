@@ -39,7 +39,7 @@ case ${1:-} in
     ;;
 
   preview)
-    say "Other stuff to show: --prefix=30%, --prefix=bottom, etc."
+    say "Other stuff to show: --preview-window=30%, --preview-window=bottom, etc."
     say ""
     prompt "find | fzf --preview='stat {}'"
     ;;
