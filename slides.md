@@ -19,7 +19,7 @@ Daniel Danner (inovex) · SoCraTes Soltau 2026
 <!-- title: Lines in, selection out -->
 <!-- demo: basics -->
 
-fzf reads lines from standard input, offers user to a fuzzy search to filter them down, then prints the selected line(s) after confirmation:
+fzf reads lines from standard input, offers the user a fuzzy search to filter them down, then prints the selected line(s) after confirmation:
 
     stdin → fzf → stdout
 
@@ -45,8 +45,8 @@ Basic CLI flags:
 
 Most real input is columnar. fzf can search one part, show another, and return a third.
 
- * `--nth=N[,…]` => search only these fields
- * `--with-nth=N[,…]` => show only these fields (subset of `--nth` selection)
+ * `--with-nth=N[,…]` => show only these fields
+ * `--nth=N[,…]` => search only these fields (subset of `--with-nth` selection)
  * `--accept-nth=N[,…]` => print only these fields on accept
 
 `N[,…]` are comma-separated 1-based field index expressions:
@@ -95,7 +95,7 @@ The preview command doesn't need to finish before being displayed.
 ```fish
 curl -s ascii.live/list | jq -r '.frames[]' \
     | fzf --preview 'curl -sN ascii.live/{}' \
-    --preview-window 'right,71%,follow'
+    --preview-window 'right,70%,follow'
 ```
 
 
@@ -187,7 +187,7 @@ find . -print0 | fzf --read0 --print0 | xargs -0 ls -l
 <!-- demo: listen -->
 
 Pass `--listen[=SOCKET_PATH|[ADDR:]PORT]` to make fzf remote-controlled (defaults to a random port,
-exposed to sub-processes via `$FZF_PORT`). For non-localhost, an API must be set via `$FZF_API_KEY`.
+exposed to sub-processes via `$FZF_PORT`). For non-localhost, an API key must be set via `$FZF_API_KEY`.
 
 ---
 <!-- kind: link -->
