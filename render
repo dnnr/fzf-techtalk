@@ -48,7 +48,6 @@ typeset_slide() {
         --padding "1 2" --margin "1 0 1 $left"
       ;;
     md)  printf '%s\n' "$body" | glow -s theme.json -w "$cols" - ;;
-    # md)  printf '%s\n' "$body" | glow -s theme.json -w "$cols" - ;;
     # Real source files, shown as themselves: the tool, and this deck.
     link)
       if command -v batcat >/dev/null 2>&1; then

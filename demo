@@ -5,7 +5,6 @@ cd "$(dirname "$0")" || exit 1
 
 # Your own config must not leak into a demo about defaults.
 unset FZF_DEFAULT_OPTS FZF_DEFAULT_OPTS_FILE
-export HISTDB_PATH=${HISTDB_PATH:-./demo.sqlite}   # seeded db, never your real one
 
 dim=$'\033[2m'; bold=$'\033[1m'; off=$'\033[0m'
 
@@ -18,7 +17,6 @@ run()  {                        # show the command, wait, then run it
 }
 prompt() {
   export PROMPT="${1:-}"
-  # fish -C 'set fish_autosuggestion_enabled 0; function fish_vcs_prompt; end; function fish_chezmoi_prompt; end; commandline -- $PROMPT';
   fish -C 'set fish_autosuggestion_enabled 0; function fish_vcs_prompt; end; function fish_chezmoi_prompt; end; commandline -- (cat '<(echo "$PROMPT")')'
 }
 done_() { printf '\n%s-- back to the deck --%s' "$dim" "$off"; read -rsn1; }
@@ -46,8 +44,6 @@ case ${1:-} in
 
   preview-header)
     prompt 'kubectl config get-contexts -o name | fzf --preview="kubectl --context {} get pods -A" --preview-window=~1,70%'
-    # More involved example using fishql:
-    # prompt 'echo -e ".separator '\'' '\''\nSELECT datetime(s.start_time, '\''unixepoch'\'', '\''localtime'\''), s.id, COUNT(*) AS line FROM sessions s JOIN commands c ON c.session_id = s.id GROUP BY s.id ORDER BY s.start_time" | fishql-query |fzf --preview "set fishql_dbfile ~/.local/share/fish/fishql.db; echo -e '\''.mode box\n select id,tty,euid,command from commands where session_id = {3}'\'' | fishql-query " --preview-window=~3'
     ;;
 
   preview-responsive)
@@ -98,20 +94,10 @@ EOF
 )"
   ;;
 
-  listen)   
+  listen)
     set -x FZF_API_KEY notreallysecretbutgoodenough
     prompt "cat names.txt | fzf --listen=0.0.0.0:1234"
   ;;
-
-  listen2)
-    say "fzf with a control channel. Nobody is touching the keyboard."
-    ( sleep 3
-      for a in down down 'change-header:hello from another process' down; do
-        curl -s -XPOST localhost:6266 -d "$a" >/dev/null; sleep 1.2
-      done ) &
-    run "seq 20 | fzf --listen 6266 --reverse --header 'watch this'"
-    wait 2>/dev/null
-    ;;
 
   *)
     prompt ""
