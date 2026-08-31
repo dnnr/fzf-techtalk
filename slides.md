@@ -45,9 +45,9 @@ Basic CLI flags:
 
 Most real input is columnar. fzf can search one part, show another, and return a third.
 
- * `--with-nth=N[,…]` => show only these fields
- * `--nth=N[,…]` => search only these fields (subset of `--with-nth` selection)
- * `--accept-nth=N[,…]` => print only these fields on accept
+ * `--with-nth=N[,…]` ⇒ show only these fields
+ * `--nth=N[,…]` ⇒ search only these fields (subset of `--with-nth` selection)
+ * `--accept-nth=N[,…]` ⇒ print only these fields on accept
 
 `N[,…]` are comma-separated 1-based field index expressions:
  * `-2` for 2nd to last
