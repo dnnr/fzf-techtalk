@@ -187,7 +187,11 @@ find . -print0 | fzf --read0 --print0 | xargs -0 ls -l
 <!-- demo: listen -->
 
 Pass `--listen[=SOCKET_PATH|[ADDR:]PORT]` to make fzf remote-controlled (defaults to a random port,
-exposed to sub-processes via `$FZF_PORT`). For non-localhost, an API key must be set via `$FZF_API_KEY`.
+exposed to sub-processes via `$FZF_PORT`).
+
+It's not as dangerous as it sounds:
+* Non-localhost clients must authenticate with an API key (defined by `$FZF_API_KEY`)
+* Remote process execution is not allowed, except with `--listen-unsafe`
 
 ---
 <!-- kind: link -->
