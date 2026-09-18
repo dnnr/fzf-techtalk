@@ -51,7 +51,7 @@ case ${1:-} in
     ;;
 
   preview-anim)
-    say "(parrot is a good example for in a small window :)"
+    say "(parrot is a good example for a small window :)"
     prompt "$(cat << 'EOF'
 curl -s ascii.live/list | jq -r '.frames[]' \
   | fzf --preview 'curl -sN ascii.live/{}' \
