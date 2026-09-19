@@ -95,7 +95,7 @@ EOF
   ;;
 
   listen)
-    set -x FZF_API_KEY notreallysecretbutgoodenough
+    export FZF_API_KEY=notreallysecretbutgoodenough
     prompt "cat names.txt | fzf --listen=0.0.0.0:1234"
   ;;
 
