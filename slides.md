@@ -11,7 +11,7 @@
 
 a low-barrier framework for interactive terminal apps (pretending to be a fuzzy finder)
 
-Daniel Danner (inovex) · Seneca 2026
+Daniel Danner (inovex) · Socrates Crete 2026
 
 
 ---
