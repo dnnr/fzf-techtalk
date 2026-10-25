@@ -22,9 +22,8 @@ if [ -z "${TMUX:-}" ]; then
   exit 1
 fi
 # Session-level overrides: 'set -u' drops them again and restores the globals.
-trap 'tmux set -u status; tmux set -u mouse' EXIT
+trap 'tmux set -u status' EXIT
 tmux set status off
-tmux set mouse off
 
 awk -f slides.awk -v mode=index -v D="$D" slides.md | head -n1 | fzf \
   --with-shell "/usr/bin/env bash -c" \
